@@ -21,14 +21,13 @@ def generate_post_content(raw_text):
     return response.text
 
 def publish_to_wordpress(title, content):
-    # Pulisce l'URL da spazi o slash finali e assicura il percorso corretto
+    # Rimuoviamo spazi e slash superflui dal Secret
     base_url = WP_URL.strip().rstrip('/')
+    
+    # Formato universale che bypassa i problemi di configurazione dei Permalink
     endpoint = f"{base_url}/index.php?rest_route=/wp/v2/posts"
     
-    # Questo formato (index.php?rest_route=) funziona ANCHE se i permalink 
-    # sono impostati su "Semplice", è la versione più compatibile in assoluto.
-    
-    print(f"Tentativo di pubblicazione su: {endpoint}")
+    print(f"Bussando a: {endpoint}")
     
     auth = (WP_USER, WP_PASS)
     post_data = {
@@ -36,6 +35,16 @@ def publish_to_wordpress(title, content):
         "content": content,
         "status": "draft"
     }
+    
+    try:
+        response = requests.post(endpoint, json=post_data, auth=auth)
+        print(f"Status Code: {response.status_code}")
+        if response.status_code != 201:
+            print(f"Dettaglio errore: {response.text}")
+        return response.status_code
+    except Exception as e:
+        print(f"Errore di connessione: {e}")
+        return None
 
 if __name__ == "__main__":
     test_text = "Today at Verucchio, working on my new office. Feeling free."
