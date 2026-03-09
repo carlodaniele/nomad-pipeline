@@ -15,7 +15,7 @@ def generate_post_content(raw_text):
     # Usiamo il modello aggiornato
     prompt = f"Transform this raw travel notes into a professional, engaging English blog post for a tech-nomad audience. Include a title: {raw_text}"
     response = client.models.generate_content(
-        model="gemini-2.0-flash", # Aggiornato al modello corrente
+        model="gemini-flash-latest", # Aggiornato al modello corrente
         contents=prompt
     )
     return response.text
