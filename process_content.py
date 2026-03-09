@@ -21,14 +21,22 @@ def generate_post_content(raw_text):
     return response.text
 
 def publish_to_wordpress(title, content):
-    endpoint = f"{WP_URL}/wp/v2/posts"
+    base_url = WP_URL.strip('/')
+    endpoint = f"{base_url}/wp-json/wp/v2/posts"
+    
     auth = (WP_USER, WP_PASS)
     post_data = {
         "title": title,
         "content": content,
         "status": "draft"
     }
+    
     response = requests.post(endpoint, json=post_data, auth=auth)
+    
+    # DEBUG: Vediamo cosa risponde esattamente WordPress
+    print(f"Status Code: {response.status_code}")
+    print(f"Response Body: {response.text[:500]}") # Stampiamo i primi 500 caratteri della risposta
+    
     return response.status_code
 
 if __name__ == "__main__":
