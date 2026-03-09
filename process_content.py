@@ -37,7 +37,7 @@ if __name__ == "__main__":
     print("Content Generated!")
     
     status = publish_to_wordpress("Nomad Diary #1", blog_content)
-    if status == 201:
-        print("Success! Draft created in WordPress.")
+    if status in [200, 201]:
+        print(f"Success! Status code: {status}. Check your WordPress drafts.")
     else:
-        print(f"Error: {status}")
+        print(f"Something went wrong. Status code: {status}")
