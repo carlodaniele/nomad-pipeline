@@ -13,14 +13,19 @@ WP_PASS = os.getenv("WP_APP_PASSWORD")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 def generate_post_content(raw_text):
-    # Usiamo una descrizione testuale per evitare tag HTML nel prompt
+    # Uso dei segnaposto per non far sparire i tag nella chat
+    # I commenti HTML servono a WordPress per creare i blocchi Gutenberg
     prompt = f"""
     Transform these notes into a professional blog post for tech nomads.
     STRUCTURE:
     1. Start with [TITLE] then a creative title.
     2. Then use [BODY] for the content.
     3. The body MUST use WordPress Gutenberg block markers.
-    4. For each paragraph, wrap it like this: <p>text</p>5. For each heading, wrap it like this: <h2>text</h2>Notes: {raw_text}
+    
+    IMPORTANT: You must wrap every element exactly like this:
+    - Paragraphs: <!-- wp:paragraph --><p>text</p><!-- /wp:paragraph -->
+    - Headings: <!-- wp:heading --><h2 class="wp-block-heading">text</h2><!-- /wp:heading -->
+    Notes: {raw_text}
     """
     response = client.models.generate_content(
         model="gemini-flash-latest",
@@ -57,7 +62,16 @@ def publish_to_wordpress(title, content):
         return None
 
 if __name__ == "__main__":
+    # Assicuriamoci che entrambe le cartelle esistano
+    upload_dir = "uploads"
     archive_dir = "processed"
+    
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+        # Creiamo un file temporaneo per assicurarci che Git la veda
+        with open(os.path.join(upload_dir, ".gitkeep"), "w") as f:
+            f.write("")
+
     if not os.path.exists(archive_dir):
         os.makedirs(archive_dir)
 
