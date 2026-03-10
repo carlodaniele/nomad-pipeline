@@ -29,3 +29,11 @@ jobs:
         WP_URL: ${{ secrets.WP_URL }}
         WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
       run: python process_content.py
+
+    - name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Archive processed files" || exit 0
+        git push
