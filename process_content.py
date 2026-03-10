@@ -1,33 +1,27 @@
 import os
+import glob
 from google import genai
 import requests
 
 # Configurazione Secrets
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 WP_URL = os.getenv("WP_URL")
-WP_USER = "carlo" # Inserisci qui il tuo username WP
+WP_USER = "carlo" 
 WP_PASS = os.getenv("WP_APP_PASSWORD")
 
-# Inizializzazione Client Gemini (Nuova sintassi 2026)
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 def generate_post_content(raw_text):
-    # Usiamo il modello aggiornato
-    prompt = f"Transform this raw travel notes into a professional, engaging English blog post for a tech-nomad audience. Include a title: {raw_text}"
+    prompt = f"Transform these raw travel notes into a professional, engaging English blog post for a tech-nomad audience. Separate the Title and the Body. Notes: {raw_text}"
     response = client.models.generate_content(
-        model="gemini-flash-latest", # Aggiornato al modello corrente
+        model="gemini-flash-latest",
         contents=prompt
     )
     return response.text
 
 def publish_to_wordpress(title, content):
-    # Rimuoviamo spazi e slash superflui dal Secret
     base_url = WP_URL.strip().rstrip('/')
-    
-    # Formato universale che bypassa i problemi di configurazione dei Permalink
     endpoint = f"{base_url}/index.php?rest_route=/wp/v2/posts"
-    
-    print(f"Bussando a: {endpoint}")
     
     auth = (WP_USER, WP_PASS)
     post_data = {
@@ -38,21 +32,35 @@ def publish_to_wordpress(title, content):
     
     try:
         response = requests.post(endpoint, json=post_data, auth=auth)
-        print(f"Status Code: {response.status_code}")
-        if response.status_code != 201:
-            print(f"Dettaglio errore: {response.text}")
         return response.status_code
     except Exception as e:
-        print(f"Errore di connessione: {e}")
+        print(f"Errore: {e}")
         return None
 
 if __name__ == "__main__":
-    test_text = "Today at Verucchio, working on my new office. Feeling free."
-    blog_content = generate_post_content(test_text)
-    print("Content Generated!")
+    # 1. Cerca file .txt nella cartella uploads
+    files = glob.glob("uploads/*.txt")
     
-    status = publish_to_wordpress("Nomad Diary #1", blog_content)
-    if status in [200, 201]:
-        print(f"Success! Status code: {status}. Check your WordPress drafts.")
+    if not files:
+        print("Nessun nuovo file da processare nella cartella uploads/")
     else:
-        print(f"Something went wrong. Status code: {status}")
+        for file_path in files:
+            print(f"Processando: {file_path}")
+            
+            with open(file_path, "r", encoding="utf-8") as f:
+                raw_notes = f.read()
+            
+            # 2. Genera contenuto con Gemini
+            blog_content = generate_post_content(raw_notes)
+            print("Content Generated!")
+            
+            # 3. Pubblica (usiamo il nome del file come titolo temporaneo o Gemini)
+            filename = os.path.basename(file_path).replace(".txt", "")
+            status = publish_to_wordpress(f"Nomad Post: {filename}", blog_content)
+            
+            if status in [200, 201]:
+                print(f"Successo per {file_path}!")
+                # 4. Opzionale: Rimuovi il file dopo la pubblicazione per non duplicarlo
+                os.remove(file_path)
+            else:
+                print(f"Errore nella pubblicazione di {file_path}: {status}")
