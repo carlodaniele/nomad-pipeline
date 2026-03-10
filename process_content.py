@@ -1,8 +1,8 @@
 import os
 import glob
+import shutil
 from google import genai
 import requests
-import shutil
 
 # Configurazione Secrets
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -13,24 +13,42 @@ WP_PASS = os.getenv("WP_APP_PASSWORD")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 def generate_post_content(raw_text):
-    prompt = f"Transform these raw travel notes into a professional, engaging English blog post for a tech-nomad audience. Separate the Title and the Body. Notes: {raw_text}"
+    # Usiamo una descrizione testuale per evitare tag HTML nel prompt
+    prompt = f"""
+    Transform these notes into a professional blog post for tech nomads.
+    STRUCTURE:
+    1. Start with [TITLE] then a creative title.
+    2. Then use [BODY] for the content.
+    3. The body MUST use WordPress Gutenberg block markers.
+    4. For each paragraph, wrap it like this: <p>text</p>5. For each heading, wrap it like this: <h2>text</h2>Notes: {raw_text}
+    """
     response = client.models.generate_content(
         model="gemini-flash-latest",
         contents=prompt
     )
     return response.text
 
+def parse_gemini_output(output):
+    title = "Nomad Journey"
+    body = output
+    if "[TITLE]" in output and "[BODY]" in output:
+        try:
+            parts = output.split("[BODY]")
+            title = parts[0].replace("[TITLE]", "").strip()
+            body = parts[1].strip()
+        except:
+            pass
+    return title, body
+
 def publish_to_wordpress(title, content):
     base_url = WP_URL.strip().rstrip('/')
     endpoint = f"{base_url}/index.php?rest_route=/wp/v2/posts"
-    
     auth = (WP_USER, WP_PASS)
     post_data = {
         "title": title,
         "content": content,
         "status": "draft"
     }
-    
     try:
         response = requests.post(endpoint, json=post_data, auth=auth)
         return response.status_code
@@ -39,36 +57,25 @@ def publish_to_wordpress(title, content):
         return None
 
 if __name__ == "__main__":
-    # Assicuriamoci che la cartella archivio esista
     archive_dir = "processed"
     if not os.path.exists(archive_dir):
         os.makedirs(archive_dir)
 
-    # 1. Cerca file .txt nella cartella uploads
     files = glob.glob("uploads/*.txt")
-    
     if not files:
-        print("Nessun nuovo file da processare nella cartella uploads/")
+        print("Nessun file trovato.")
     else:
         for file_path in files:
-            print(f"Processando: {file_path}")
-            
+            print(f"In lavorazione: {file_path}")
             with open(file_path, "r", encoding="utf-8") as f:
                 raw_notes = f.read()
             
-            # 2. Genera contenuto con Gemini
-            blog_content = generate_post_content(raw_notes)
-            print("Content Generated!")
+            raw_output = generate_post_content(raw_notes)
+            title, blog_content = parse_gemini_output(raw_output)
             
-            # 3. Pubblica
-            filename = os.path.basename(file_path)
-            title_clean = filename.replace(".txt", "").replace("-", " ").title()
-            status = publish_to_wordpress(f"Nomad Post: {title_clean}", blog_content)
-            
+            status = publish_to_wordpress(title, blog_content)
             if status in [200, 201]:
-                print(f"Successo per {file_path}!")
-                # 4. Sposta il file nella cartella processed
-                shutil.move(file_path, os.path.join(archive_dir, filename))
-                print(f"File archiviato in {archive_dir}/")
+                print(f"Successo! Titolo: {title}")
+                shutil.move(file_path, os.path.join(archive_dir, os.path.basename(file_path)))
             else:
-                print(f"Errore nella pubblicazione di {file_path}: {status}")
+                print(f"Errore WP: {status}")
