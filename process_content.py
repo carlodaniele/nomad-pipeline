@@ -44,7 +44,7 @@ def generate_post_content(raw_text, has_image=False):
     img_instruction = ""
     if has_image:
         img_instruction = """
-        4. Since an image is available, include it ONCE at the beginning of the body using this exact syntax:
+        4. Since an image is available, include it ONCE at the bottom of the body using this exact syntax:
         <!-- wp:image {"id":[IMAGE_ID],"sizeSlug":"large","linkDestination":"none"} --><figure class="wp-block-image size-large"><img src="[IMAGE_URL]" alt="Nomad Journey Image" class="wp-image-[IMAGE_ID] /></figure><!-- /wp:image -->
         """
     # Uso dei segnaposto per non far sparire i tag nella chat
