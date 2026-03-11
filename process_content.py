@@ -141,8 +141,8 @@ if __name__ == "__main__":
             
             # Sostituzione URL immagine nel corpo se necessario
             if image_url and media_id:
-            blog_content = blog_content.replace("[IMAGE_URL]", image_url)
-            blog_content = blog_content.replace("[IMAGE_ID]", str(media_id)) # <--- RIGA NUOVA
+                blog_content = blog_content.replace("[IMAGE_URL]", image_url)
+                blog_content = blog_content.replace("[IMAGE_ID]", str(media_id)) # <--- RIGA NUOVA
         
         # E QUI PASSIAMO IL MEDIA_ID AL MOMENTO DEL POST
         status = publish_to_wordpress(title, blog_content, media_id)
