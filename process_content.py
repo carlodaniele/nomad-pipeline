@@ -45,7 +45,7 @@ def generate_post_content(raw_text, has_image=False):
     if has_image:
         img_instruction = """
         4. Since an image is available, include it ONCE at the beginning of the body using this exact syntax:
-        <figure class="wp-block-image size-large"><img src="[IMAGE_URL]" alt="Nomad Journey Image"/></figure>
+        <!-- wp:image {"id":[IMAGE_ID],"sizeSlug":"large","linkDestination":"none"} --><figure class="wp-block-image size-large"><img src="[IMAGE_URL]" alt="Nomad Journey Image" class="wp-image-[IMAGE_ID] /></figure><!-- /wp:image -->
         """
     # Uso dei segnaposto per non far sparire i tag nella chat
     # I commenti HTML servono a WordPress per creare i blocchi Gutenberg
@@ -140,11 +140,12 @@ if __name__ == "__main__":
             title, blog_content = parse_gemini_output(raw_output)
             
             # Sostituzione URL immagine nel corpo se necessario
-            if image_url:
-                blog_content = blog_content.replace("[IMAGE_URL]", image_url)
-            
-            # Pubblicazione
-            status = publish_to_wordpress(title, blog_content, media_id)
+            if image_url and media_id:
+            blog_content = blog_content.replace("[IMAGE_URL]", image_url)
+            blog_content = blog_content.replace("[IMAGE_ID]", str(media_id)) # <--- RIGA NUOVA
+        
+        # E QUI PASSIAMO IL MEDIA_ID AL MOMENTO DEL POST
+        status = publish_to_wordpress(title, blog_content, media_id)
             
             if status in [200, 201]:
                 print(f"Successo! Post creato: {title}")
