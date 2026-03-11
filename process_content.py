@@ -80,7 +80,7 @@ def parse_gemini_output(output):
             pass
     return title, body
 
-def publish_to_wordpress(title, content):
+def publish_to_wordpress(title, content, media_id=None):
     base_url = WP_URL.strip().rstrip('/')
     endpoint = f"{base_url}/index.php?rest_route=/wp/v2/posts"
     auth = (WP_USER, WP_PASS)
@@ -144,8 +144,8 @@ if __name__ == "__main__":
                 blog_content = blog_content.replace("[IMAGE_URL]", image_url)
                 blog_content = blog_content.replace("[IMAGE_ID]", str(media_id)) # <--- RIGA NUOVA
         
-        # E QUI PASSIAMO IL MEDIA_ID AL MOMENTO DEL POST
-        status = publish_to_wordpress(title, blog_content, media_id)
+            # E QUI PASSIAMO IL MEDIA_ID AL MOMENTO DEL POST
+            status = publish_to_wordpress(title, blog_content, media_id)
             
             if status in [200, 201]:
                 print(f"Successo! Post creato: {title}")
