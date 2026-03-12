@@ -89,13 +89,10 @@ def generate_post_content(raw_text, image_list=[]):
     if num_images == 1:
         # Scenario 1: Singola immagine
         img = image_list[0]
-        images_content = (
-            '\n\n\n' +
-            '<!-- wp:image ' + str(img["id"]) + ', "sizeSlug": "large", "linkDestination":"none"} -->\n' +
-            '<figure class="wp-block-image size-large"><img src="' + img["url"] + '" alt="Nomad Journey" class="wp-image-' + str(img["id"]) + '"/></figure>\n' +
-            '<!-- /wp:image -->\n' +
-            '\n'
-        )
+        riga_wp = '\n\n\n<!-- wp:image {"id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
+        riga_html = '<figure class="wp-block-image size-large"><img src="%s" alt="Nomad" class="wp-image-%s"/></figure>\n' % (img["url"], str(img["id"]))
+        riga_chiusura = '<!-- /wp:image -->\n'
+        images_content = riga_wp + riga_html + riga_chiusura
         
     elif num_images > 1:
         # Scenario 2: Più immagini (Galleria)
@@ -104,13 +101,11 @@ def generate_post_content(raw_text, image_list=[]):
         images_content += '<!-- wp:gallery {"linkTo":"none"} -->\n'
         images_content += '<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
         for img in image_list:
-            images_content += (
-                '\n\n\n' +
-                '<!-- wp:image {"id": ' + str(img["id"]) + ', "sizeSlug": "large", "linkDestination":"none"} -->\n' +
-                '<figure class="wp-block-image size-large"><img src="' + img["url"] + '" alt="Nomad Journey" class="wp-image-' + str(img["id"]) + '"/></figure>\n' +
-                '<!-- /wp:image -->\n' +
-                '\n'
-            )
+            riga_wp = '\n\n\n<!-- wp:image {"id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
+            riga_html = '<figure class="wp-block-image size-large"><img src="%s" alt="Nomad" class="wp-image-%s"/></figure>\n' % (img["url"], str(img["id"]))
+            riga_chiusura = '<!-- /wp:image -->\n'
+            images_content += riga_wp + riga_html + riga_chiusura
+            
         images_content += '\n<!-- /wp:gallery -->\n'
         images_content += '\n</figure>\n'
 
