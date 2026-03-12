@@ -15,14 +15,11 @@ jobs:
 steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
 - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
-        cache: 'pip'
 
 - name: Install dependencies
       run: |
@@ -34,12 +31,7 @@ steps:
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         WP_URL: ${{ secrets.WP_URL }}
         WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
-      run: |
-        echo "--- DEBUG: VERIFICA CONTENUTO FILE ---"
-        ls -al
-        cat process_content.py
-        echo "--- FINE DEBUG ---"
-        python process_content.py
+      run: python process_content.py
 
 - name: Commit changes
       run: |
