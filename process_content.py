@@ -105,8 +105,8 @@ def generate_post_content(raw_text, image_list=[]):
         for img in image_list:
             images_content += (
                 f'\n\n'
-                f'<!-- wp:image {"id":{img["id"]},"sizeSlug":"large","linkDestination":"none"} -->\n'
-                f'<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Gallery Photo" class="wp-image-{img["id"]}"/></figure>\n'
+                f'<!-- wp:image {{"id":{{img["id"]}}},"sizeSlug":"large","linkDestination":"none"} -->\n'
+                f'<figure class="wp-block-image size-large"><img src="{{img["url"]}}" alt="Gallery Photo" class="wp-image-{{img["id"]}}"/></figure>\n'
                 f'<!-- /wp:image -->\n'
                 f''
             )
