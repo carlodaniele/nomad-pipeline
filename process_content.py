@@ -105,9 +105,9 @@ def generate_post_content(raw_text, image_list=[]):
             riga_html = '<figure class="wp-block-image size-large"><img src="%s" alt="Nomad" class="wp-image-%s"/></figure>\n' % (img["url"], str(img["id"]))
             riga_chiusura = '<!-- /wp:image -->\n'
             images_content += riga_wp + riga_html + riga_chiusura
-            
-        images_content += '\n<!-- /wp:gallery -->\n'
+
         images_content += '\n</figure>\n'
+        images_content += '\n<!-- /wp:gallery -->\n'
 
     # Se num_images è 0, images_content resta "" e non sporca il post.
     return raw_output + images_content
