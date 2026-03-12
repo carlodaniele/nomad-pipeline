@@ -2,6 +2,7 @@ import os
 import glob
 import shutil
 from google import genai
+from PIL import Image
 import requests
 
 # Configurazione Secrets
@@ -12,8 +13,22 @@ WP_PASS = os.getenv("WP_APP_PASSWORD")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+def resize_image(file_path, max_width=1600):
+    """Ridimensiona l'immagine per ottimizzare spazio su Kinsta"""
+    try:
+        with Image.open(file_path) as img:
+            if img.width > max_width:
+                ratio = max_width / float(img.width)
+                new_height = int(float(img.height) * float(ratio))
+                img = img.resize((max_width, new_height), Image.Resampling.LANCZOS)
+                # Sovrascrive l'originale con la versione ottimizzata
+                img.save(file_path, optimize=True, quality=85)
+    except Exception as e:
+        print(f"Errore resize: {e}")
+
 def upload_media(file_path):
     """Carica l'immagine su WP e restituisce ID e URL"""
+    resize_image(file_path)
     endpoint = f"{WP_URL}/index.php?rest_route=/wp/v2/media"
     auth = (WP_USER, WP_PASS)
     filename = os.path.basename(file_path)
@@ -40,13 +55,12 @@ def upload_media(file_path):
         print(f"Errore upload_media: {e}")
         return None, None
 
-def generate_post_content(raw_text, has_image=False):
-    img_instruction = ""
-    if has_image:
-        img_instruction = """
-        4. Since an image is available, include it ONCE at the bottom of the body using this exact syntax:
-        <!-- wp:image {"id":[IMAGE_ID],"linkDestination":"none"} --><figure class="wp-block-image size-large"><img src="[IMAGE_URL]" alt="Nomad Journey Image" class="wp-image-[IMAGE_ID]" /></figure><!-- /wp:image -->
-        """
+def generate_post_content(raw_text, image_list=[]):
+    """
+    Passiamo a Gemini solo il testo. 
+    Lui genera Body e Titolo, noi aggiungiamo la parte visiva dopo.
+    """
+    
     # Uso dei segnaposto per non far sparire i tag nella chat
     # I commenti HTML servono a WordPress per creare i blocchi Gutenberg
     prompt = f"""
@@ -55,7 +69,6 @@ def generate_post_content(raw_text, has_image=False):
     1. Start with [TITLE] then a creative title.
     2. Then use [BODY] for the content.
     3. The body MUST use WordPress Gutenberg block markers.
-    {img_instruction}
     
     IMPORTANT: You must wrap every element exactly like this:
     - Paragraphs: <!-- wp:paragraph --><p>text</p><!-- /wp:paragraph -->
@@ -66,7 +79,42 @@ def generate_post_content(raw_text, has_image=False):
         model="gemini-flash-latest",
         contents=prompt
     )
-    return response.text
+    raw_output = response.text
+
+    # Inizializziamo il contenitore come stringa vuota (Scenario 0: Nessuna immagine)
+    images_content = ""
+    num_images = len(image_list)
+
+    if num_images == 1:
+        # Scenario 1: Singola immagine
+        img = image_list[0]
+        images_content = (
+            f'\n\n\n'
+            f'<!-- wp:image {"id":{img["id"]},"sizeSlug":"large","linkDestination":"none"} -->\n'
+            f'<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad Journey" class="wp-image-{img["id"]}"/></figure>'
+            f'<!-- /wp:image -->\n'
+            f''
+        )
+        
+    elif num_images > 1:
+        # Scenario 2: Più immagini (Galleria)
+        ids_str = ",".join([str(img['id']) for img in image_list])
+        images_content = f'\n\n\n'
+        images_content += '<!-- wp:gallery {"linkTo":"none"} -->\n'
+        images_content += '<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
+        for img in image_list:
+            images_content += (
+                f'\n\n'
+                f'<!-- wp:image {"id":{img["id"]},"sizeSlug":"large","linkDestination":"none"} -->\n'
+                f'<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Gallery Photo" class="wp-image-{img["id"]}"/></figure>\n'
+                f'<!-- /wp:image -->\n'
+                f''
+            )
+        images_content += '\n<!-- /wp:gallery -->\n'
+        images_content += '\n</figure>\n'
+
+    # Se num_images è 0, images_content resta "" e non sporca il post.
+    return raw_output + images_content
 
 def parse_gemini_output(output):
     title = "Nomad Journey"
@@ -99,7 +147,7 @@ def publish_to_wordpress(title, content, media_id=None):
         print(f"Errore: {e}")
         return None
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
     # Assicuriamoci che entrambe le cartelle esistano
     upload_dir = "uploads"
     archive_dir = "processed"
@@ -113,17 +161,18 @@ if __name__ == "__main__":
     if not os.path.exists(archive_dir):
         os.makedirs(archive_dir)
 
-    # 1. Cerca Immagini
+    # 1. Carica TUTTE le Immagini
     image_extensions = ('*.jpg', '*.jpeg', '*.png', '*.webp')
     image_files = []
     for ext in image_extensions:
         image_files.extend(glob.glob(os.path.join(upload_dir, ext)))
     
-    media_id = None
-    image_url = ""
-    if image_files:
-        print(f"Trovata immagine: {image_files[0]}")
-        media_id, image_url = upload_media(image_files[0])
+    uploaded_images = [] # Creiamo la lista per la galleria
+    for img_path in image_files:
+        print(f"Caricamento immagine: {img_path}")
+        m_id, m_url = upload_media(img_path)
+        if m_id:
+            uploaded_images.append({'id': m_id, 'url': m_url})
 
     # 2. Cerca Testi
     text_files = glob.glob(os.path.join(upload_dir, "*.txt"))
@@ -135,17 +184,15 @@ if __name__ == "__main__":
             with open(file_path, "r", encoding="utf-8") as f:
                 raw_notes = f.read()
             
-            # Generazione contenuto (passiamo l'info se c'è un'immagine)
-            raw_output = generate_post_content(raw_notes, has_image=bool(media_id))
+            # 1. Genera il contenuto passando la LISTA delle immagini
+            raw_output = generate_post_content(raw_notes, uploaded_images)
             title, blog_content = parse_gemini_output(raw_output)
+
+            # 2. Prendi la prima immagine come immagine in evidenza (se esiste)
+            feat_id = uploaded_images[0]['id'] if uploaded_images else None
             
-            # Sostituzione URL immagine nel corpo se necessario
-            if image_url and media_id:
-                blog_content = blog_content.replace("[IMAGE_URL]", image_url)
-                blog_content = blog_content.replace("[IMAGE_ID]", str(media_id)) # <--- RIGA NUOVA
-        
-            # E QUI PASSIAMO IL MEDIA_ID AL MOMENTO DEL POST
-            status = publish_to_wordpress(title, blog_content, media_id)
+            # 3. Pubblica UNA SOLA VOLTA
+            status = publish_to_wordpress(title, blog_content, feat_id)
             
             if status in [200, 201]:
                 print(f"Successo! Post creato: {title}")
