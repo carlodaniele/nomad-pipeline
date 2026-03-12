@@ -90,7 +90,7 @@ def generate_post_content(raw_text, image_list=[]):
         img = image_list[0]
         images_content = (
             '\n\n\n' +
-            '<!-- wp:image {"id": {img["id"], "sizeSlug": "large", "linkDestination":"none"} -->\n' +
+            '<!-- wp:image ' + img["id"] + ', "sizeSlug": "large", "linkDestination":"none"} -->\n' +
             '<figure class="wp-block-image size-large"><img src="' + img["url"] + '" alt="Nomad Journey" class="wp-image-' + str(img["id"]) + '"/></figure>\n' +
             '<!-- /wp:image -->\n' +
             '\n'
@@ -105,7 +105,7 @@ def generate_post_content(raw_text, image_list=[]):
         for img in image_list:
             images_content += (
                 '\n\n\n' +
-                '<!-- wp:image {"id": {img["id"], "sizeSlug": "large", "linkDestination":"none"} -->\n' +
+                '<!-- wp:image {"id": ' + img["id"] + ', "sizeSlug": "large", "linkDestination":"none"} -->\n' +
                 '<figure class="wp-block-image size-large"><img src="' + img["url"] + '" alt="Nomad Journey" class="wp-image-' + str(img["id"]) + '"/></figure>\n' +
                 '<!-- /wp:image -->\n' +
                 '\n'
