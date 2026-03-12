@@ -101,7 +101,7 @@ def generate_post_content(raw_text, image_list=[]):
         images_content += '<!-- wp:gallery {"linkTo":"none"} -->\n'
         images_content += '<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
         for img in image_list:
-            riga_wp = '\n\n\n<!-- wp:image {"id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
+            riga_wp = '\n\n\n<!-- wp:image {"lightbox":{"enabled":true}, "id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
             riga_html = '<figure class="wp-block-image size-large"><img src="%s" alt="Nomad" class="wp-image-%s"/></figure>\n' % (img["url"], str(img["id"]))
             riga_chiusura = '<!-- /wp:image -->\n'
             images_content += riga_wp + riga_html + riga_chiusura
