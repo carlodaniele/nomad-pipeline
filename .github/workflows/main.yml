@@ -1,41 +1,50 @@
 name: Nomad Pipeline Execution
 
 on:
-  push:
-    paths:
-      - 'uploads/**'
+  push:
+    paths:
+      - 'uploads/**'
+      - 'process_content.py'
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+- name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
+- name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
 
-    - name: Run Processing Script
-      env:
-        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        WP_URL: ${{ secrets.WP_URL }}
-        WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
-      run: python process_content.py
+- name: Run Processing Script
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        WP_URL: ${{ secrets.WP_URL }}
+        WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
+      run: |
+        echo "--- DEBUG: VERIFICA CONTENUTO FILE ---"
+        ls -al
+        cat process_content.py
+        echo "--- FINE DEBUG ---"
+        python process_content.py
 
-    - name: Commit changes
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add .
-        git commit -m "Archive processed files" || exit 0
-        git push
+- name: Commit changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git commit -m "Archive processed files" || exit 0
+        git push
