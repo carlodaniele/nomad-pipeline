@@ -90,7 +90,7 @@ def generate_post_content(raw_text, image_list=[]):
         img = image_list[0]
         images_content = (
             f'\n\n\n'
-            f'<!-- wp:image {{"id":{{img["id"]}}},"sizeSlug":"large","linkDestination":"none"} -->\n'
+            f'<!-- wp:image {{"id": {img["id"]}, "sizeSlug": "large", "linkDestination":"none"}} -->\n'
             f'<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad Journey" class="wp-image-{img["id"]}"/></figure>'
             f'<!-- /wp:image -->\n'
             f''
