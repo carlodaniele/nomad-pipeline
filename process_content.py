@@ -89,11 +89,11 @@ def generate_post_content(raw_text, image_list=[]):
         # Scenario 1: Singola immagine
         img = image_list[0]
         images_content = (
-            f'\n\n\n'
-            f'<!-- wp:image {{"id": {img["id"]}, "sizeSlug": "large", "linkDestination":"none"}} -->\n'
-            f'<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad Journey" class="wp-image-{img["id"]}"/></figure>'
-            f'<!-- /wp:image -->\n'
-            f''
+            '\n\n\n' +
+            '<!-- wp:image {"id": {img["id"], "sizeSlug": "large", "linkDestination":"none"} -->\n' +
+            '<figure class="wp-block-image size-large"><img src="' + img["url"] + '" alt="Nomad Journey" class="wp-image-' + str(img["id"]) + '"/></figure>\n' +
+            '<!-- /wp:image -->\n' +
+            '\n'
         )
         
     elif num_images > 1:
@@ -104,11 +104,11 @@ def generate_post_content(raw_text, image_list=[]):
         images_content += '<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
         for img in image_list:
             images_content += (
-                f'\n\n'
-                f'<!-- wp:image {{"id":{{img["id"]}}},"sizeSlug":"large","linkDestination":"none"} -->\n'
-                f'<figure class="wp-block-image size-large"><img src="{{img["url"]}}" alt="Gallery Photo" class="wp-image-{{img["id"]}}"/></figure>\n'
-                f'<!-- /wp:image -->\n'
-                f''
+                '\n\n\n' +
+                '<!-- wp:image {"id": {img["id"], "sizeSlug": "large", "linkDestination":"none"} -->\n' +
+                '<figure class="wp-block-image size-large"><img src="' + img["url"] + '" alt="Nomad Journey" class="wp-image-' + str(img["id"]) + '"/></figure>\n' +
+                '<!-- /wp:image -->\n' +
+                '\n'
             )
         images_content += '\n<!-- /wp:gallery -->\n'
         images_content += '\n</figure>\n'
