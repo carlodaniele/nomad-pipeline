@@ -63,7 +63,7 @@ def generate_post_content(raw_text, image_list=[]):
     
     # Uso dei segnaposto per non far sparire i tag nella chat
     # I commenti HTML servono a WordPress per creare i blocchi Gutenberg
-    prompt = f"""
+    prompt = """
     Transform these notes into a professional blog post for tech nomads.
     STRUCTURE:
     1. Start with [TITLE] then a creative title.
@@ -73,8 +73,9 @@ def generate_post_content(raw_text, image_list=[]):
     IMPORTANT: You must wrap every element exactly like this:
     - Paragraphs: <!-- wp:paragraph --><p>text</p><!-- /wp:paragraph -->
     - Headings: <!-- wp:heading --><h2 class="wp-block-heading">text</h2><!-- /wp:heading -->
-    Notes: {raw_text}
-    """
+    Notes: {notes}
+    """.format(notes=raw_text)
+    
     response = client.models.generate_content(
         model="gemini-flash-latest",
         contents=prompt
