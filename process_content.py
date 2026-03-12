@@ -99,7 +99,7 @@ def generate_post_content(raw_text, image_list=[]):
     elif num_images > 1:
         # Scenario 2: Più immagini (Galleria)
         ids_str = ",".join([str(img['id']) for img in image_list])
-        images_content = f'\n\n\n'
+        images_content = '\n\n\n'
         images_content += '<!-- wp:gallery {"linkTo":"none"} -->\n'
         images_content += '<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
         for img in image_list:
