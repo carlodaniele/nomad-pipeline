@@ -8,7 +8,7 @@ import requests
 # Configurazione Secrets
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 WP_URL = os.getenv("WP_URL")
-WP_USER = "carlo" 
+WP_USER = os.getenv("WP_USER")
 WP_PASS = os.getenv("WP_APP_PASSWORD")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -123,8 +123,10 @@ def generate_post_content(raw_text, image_list=[]):
     # I commenti HTML servono a WordPress per creare i blocchi Gutenberg
     prompt = """
     Transform these notes into a professional blog post for tech nomads.
-    CONTEXT: The photos were taken at these coordinates:
-    {locs}
+    Use the provided coordinates to mention the specific city or area in the post.
+    
+    CONTEXT: 
+    - The photos were taken at these coordinates: {locs}
     
     STRUCTURE:
     1. Start with [TITLE] then a creative title.
