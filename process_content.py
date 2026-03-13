@@ -8,7 +8,7 @@ import requests
 # Configurazione Secrets
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 WP_URL = os.getenv("WP_URL")
-WP_USER = os.getenv("WP_USER")
+WP_USER = "carlo"
 WP_PASS = os.getenv("WP_APP_PASSWORD")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
