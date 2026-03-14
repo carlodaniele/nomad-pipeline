@@ -171,7 +171,7 @@ def generate_post_content(raw_text, image_list, locations, lang, audio_files_ref
     contents.append(prompt)
     
     response = client.models.generate_content(
-        model="gemini-2.0-flash", # <--- CORRETTO
+        model="gemini-flash-latest", # <--- CORRETTO
         contents=contents
     )
     return response.text
