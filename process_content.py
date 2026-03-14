@@ -292,7 +292,7 @@ if __name__ == "__main__":
                     gallery_html += '\n<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
                     for img in uploaded_images:
                         # Usiamo il formato corretto per i blocchi immagine Gutenberg
-                        gallery_html = '\n<!-- wp:image {"lightbox":{"enabled":true}, "id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
+                        gallery_html += '\n<!-- wp:image {"lightbox":{"enabled":true}, "id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
                         gallery_html += f'\n<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad" class="wp-image-{img["id"]}"/></figure>'
                         gallery_html += '\n<!-- /wp:image -->\n'
                     gallery_html += '\n</figure>'
@@ -300,7 +300,7 @@ if __name__ == "__main__":
                 elif len(uploaded_images) == 1:
                     img = uploaded_images[0]
                     gallery_html = '\n\n\n<!-- wp:image {"lightbox":{"enabled":true}, "id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
-                    gallery_html += f'\n\n<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad" class="wp-image-{img["id"]}"/></figure>'
+                    gallery_html += f'\n<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad" class="wp-image-{img["id"]}"/></figure>'
                     gallery_html += '\n<!-- /wp:image -->\n'
                 
                 # 4. Uniamo il testo di Gemini con la galleria
