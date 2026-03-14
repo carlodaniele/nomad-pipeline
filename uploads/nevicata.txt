@@ -1,1 +1,0 @@
-Questa è una bella nevicata, ma non mi ricordo né il posto, né la data. Gemini, estrai i dati Exif e crea un articolo in cui si evince la località e il giorno della nevicata.
