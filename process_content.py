@@ -304,17 +304,19 @@ if __name__ == "__main__":
             # 6. COSTRUZIONE GALLERIA (Usa la logica corretta +=)
             gallery_html = ""
             if len(uploaded_images) > 1:
-                gallery_html = '\n\n\n<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
+                gallery_html = '\n\n\n<!-- wp:gallery {"linkTo":"none"} -->'
+                gallery_html += '\n<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
                 for img in uploaded_images:
-                    gallery_html += '\n\n' % str(img["id"])
+                    gallery_html = '\n<!-- wp:image {"lightbox":{"enabled":true}, "id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
                     gallery_html += f'<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad" class="wp-image-{img["id"]}"/></figure>\n'
-                    gallery_html += ''
-                gallery_html += '\n</figure>\n'
+                    gallery_html += '\n<!-- /wp:image -->\n'
+                gallery_html += '\n</figure>'
+                gallery_html += '\n<!-- /wp:gallery -->\n'
             elif len(uploaded_images) == 1:
                 img = uploaded_images[0]
-                gallery_html = '\n\n\n' % str(img["id"])
+                gallery_html = '\n\n\n<!-- wp:image {"lightbox":{"enabled":true}, "id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
                 gallery_html += f'<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad" class="wp-image-{img["id"]}"/></figure>\n'
-                gallery_html += ''
+                gallery_html += '\n<!-- /wp:image -->\n'
             
             structured_data["body"] = structured_data.get("body", "") + gallery_html
 
