@@ -119,11 +119,15 @@ def generate_post_content(raw_text, image_list=[]):
         if img.get('coords'):
             locations += f"- Image at Lat: {img['coords']['lat']}, Lon: {img['coords']['lon']}\n"
     
+    target_language = "Italian"
+
     # Uso dei segnaposto per non far sparire i tag nella chat
     # I commenti HTML servono a WordPress per creare i blocchi Gutenberg
     prompt = """
     Transform these notes into a professional blog post for tech nomads.
     Use the provided coordinates to mention the specific city or area in the post.
+
+    IMPORTANT: The entire post (Title and Body) MUST be written in {lang}.
     
     CONTEXT: 
     - The photos were taken at these coordinates: {locs}
@@ -137,7 +141,7 @@ def generate_post_content(raw_text, image_list=[]):
     - Paragraphs: <!-- wp:paragraph --><p>text</p><!-- /wp:paragraph -->
     - Headings: <!-- wp:heading --><h2 class="wp-block-heading">text</h2><!-- /wp:heading -->
     Notes: {notes}
-    """.format(notes=raw_text, locs=locations)
+    """.format(notes=raw_text, locs=locations, lang=target_language)
     
     response = client.models.generate_content(
         model="gemini-flash-latest",
