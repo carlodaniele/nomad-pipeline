@@ -307,7 +307,7 @@ if __name__ == "__main__":
                 gallery_html = '\n\n\n<!-- wp:gallery {"linkTo":"none"} -->'
                 gallery_html += '\n<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
                 for img in uploaded_images:
-                    gallery_html = '\n<!-- wp:image {"lightbox":{"enabled":true}, "id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
+                    gallery_html += '\n<!-- wp:image {"lightbox":{"enabled":true}, "id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
                     gallery_html += f'<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad" class="wp-image-{img["id"]}"/></figure>\n'
                     gallery_html += '\n<!-- /wp:image -->\n'
                 gallery_html += '\n</figure>'
