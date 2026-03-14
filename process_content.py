@@ -4,6 +4,7 @@ import shutil
 from google import genai
 from PIL import Image, ExifTags
 import requests
+import json
 
 # Configurazione Secrets
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -107,7 +108,7 @@ def upload_media(file_path):
         print(f"Errore upload_media: {e}")
         return None, None, None
 
-def generate_post_content(raw_text, image_list=[]):
+def generate_post_content(raw_text, image_list, locations, lang):
     """
     Passiamo a Gemini solo il testo. 
     Lui genera Body e Titolo, noi aggiungiamo la parte visiva dopo.
@@ -119,65 +120,43 @@ def generate_post_content(raw_text, image_list=[]):
         if img.get('coords'):
             locations += f"- Image at Lat: {img['coords']['lat']}, Lon: {img['coords']['lon']}\n"
     
-    target_language = "Italian"
 
     # Uso dei segnaposto per non far sparire i tag nella chat
     # I commenti HTML servono a WordPress per creare i blocchi Gutenberg
     prompt = """
-    Transform these notes into a professional blog post for tech nomads.
+    Transform these notes into a professional blog post.
+    Act as a professional Business Content Strategist. 
+    Convert the following notes into a blog post for the 'Nomad Pipeline' blog.
     Use the provided coordinates to mention the specific city or area in the post.
 
-    IMPORTANT: The entire post (Title and Body) MUST be written in {lang}.
-    
-    CONTEXT: 
-    - The photos were taken at these coordinates: {locs}
-    
-    STRUCTURE:
-    1. Start with [TITLE] then a creative title.
-    2. Then use [BODY] for the content.
-    3. The body MUST use WordPress Gutenberg block markers.
-    
-    IMPORTANT: You must wrap every element exactly like this:
+    MANDATORY RULES:
+    1. LANGUAGE: All content in the JSON fields must be in {lang}.
+    2. GEOLOCATION: Use the coordinates {locs} to identify the location. 
+       CRITICAL: If {locs} is empty, DO NOT invent a location.
+    3. FORMAT: Return ONLY a valid JSON object. No preamble, no conversational text.
+
+    WORDPRESS BLOCK RULES (Apply to the 'body' field): 
+    1. You must wrap every element exactly like this:
     - Paragraphs: <!-- wp:paragraph --><p>text</p><!-- /wp:paragraph -->
     - Headings: <!-- wp:heading --><h2 class="wp-block-heading">text</h2><!-- /wp:heading -->
+
+    REQUIRED JSON STRUCTURE:
+    {{
+        "title": "A catchy, professional title",
+        "body": "The main content using WordPress Gutenberg blocks (and )",
+        "excerpt": "A 20-word SEO-friendly summary",
+        "tags": ["tag1", "tag2", "tag3"],
+        "focus_kw": "The primary focus keyword for Yoast SEO"
+    }}
+    
     Notes: {notes}
-    """.format(notes=raw_text, locs=locations, lang=target_language)
+    """.format(notes=raw_text, locs=locations, lang=lang)
     
     response = client.models.generate_content(
         model="gemini-flash-latest",
         contents=prompt
     )
-    raw_output = response.text
-
-    # Inizializziamo il contenitore come stringa vuota (Scenario 0: Nessuna immagine)
-    images_content = ""
-    num_images = len(image_list)
-
-    if num_images == 1:
-        # Scenario 1: Singola immagine
-        img = image_list[0]
-        riga_wp = '\n\n\n<!-- wp:image {"id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
-        riga_html = '<figure class="wp-block-image size-large"><img src="%s" alt="Nomad" class="wp-image-%s"/></figure>\n' % (img["url"], str(img["id"]))
-        riga_chiusura = '<!-- /wp:image -->\n'
-        images_content = riga_wp + riga_html + riga_chiusura
-        
-    elif num_images > 1:
-        # Scenario 2: Più immagini (Galleria)
-        ids_str = ",".join([str(img['id']) for img in image_list])
-        images_content = '\n\n\n'
-        images_content += '<!-- wp:gallery {"linkTo":"none"} -->\n'
-        images_content += '<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
-        for img in image_list:
-            riga_wp = '\n\n\n<!-- wp:image {"lightbox":{"enabled":true}, "id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
-            riga_html = '<figure class="wp-block-image size-large"><img src="%s" alt="Nomad" class="wp-image-%s"/></figure>\n' % (img["url"], str(img["id"]))
-            riga_chiusura = '<!-- /wp:image -->\n'
-            images_content += riga_wp + riga_html + riga_chiusura
-
-        images_content += '\n</figure>\n'
-        images_content += '\n<!-- /wp:gallery -->\n'
-
-    # Se num_images è 0, images_content resta "" e non sporca il post.
-    return raw_output + images_content
+    return response.text
 
 def parse_gemini_output(output):
     title = "Nomad Journey"
@@ -191,84 +170,156 @@ def parse_gemini_output(output):
             pass
     return title, body
 
-def publish_to_wordpress(title, content, media_id=None):
+def process_gemini_response(response_text):
+    try:
+        # Remove any markdown formatting if present
+        clean_json = response_text.replace("```json", "").replace("```", "").strip()
+        data = json.loads(clean_json)
+        return data
+    except Exception as e:
+        print(f"Error parsing JSON: {e}")
+        return None
+
+def publish_to_wordpress(data, media_id=None, locations=None):
     base_url = WP_URL.strip().rstrip('/')
     endpoint = f"{base_url}/index.php?rest_route=/wp/v2/posts"
     auth = (WP_USER, WP_PASS)
+    
+    # Extract data from the JSON dictionary provided by Gemini
+    title = data.get("title", "New Post from Nomad Pipeline")
+    content = data.get("body", "")
+    excerpt = data.get("excerpt", "")
+    focus_kw = data.get("focus_kw", "")
+    
+    # Add Google Maps link if locations are available
+    if locations and isinstance(locations, str):
+        try:
+            # Prende la prima coordinata (funziona sia con 1 che con 10 foto)
+            first_coord = locations.split(';')[0].strip()
+            # Pulizia opzionale se la stringa contiene "lat:"
+            clean_coord = first_coord.replace("lat:", "").replace("lon:", "").replace("{", "").replace("}", "").strip()
+            
+            map_html = f'\n\n<p>📍 <a href="https://www.google.com/maps/search/?api=1&query={clean_coord}">View on Google Maps</a></p>'
+            content += map_html
+        except:
+            pass
+
     post_data = {
         "title": title,
         "content": content,
-        "status": "draft"
+        "excerpt": excerpt,
+        "status": "draft",
+        "meta": {
+            "_yoast_wpseo_focuskw": focus_kw,
+            "_yoast_wpseo_metadesc": excerpt
+        }
     }
+    
     if media_id:
         post_data["featured_media"] = media_id
         
     try:
         response = requests.post(endpoint, json=post_data, auth=auth)
+        if response.status_code == 201:
+            print("Post created successfully as a draft.")
+        else:
+            print(f"WP Error: {response.status_code} - {response.text}")
         return response.status_code
     except Exception as e:
-        print(f"Errore: {e}")
+        print(f"Error connecting to WordPress: {e}")
         return None
 
 if __name__ == "__main__":    
-    # Assicuriamoci che entrambe le cartelle esistano
+    # Configuration
     upload_dir = "uploads"
     archive_dir = "processed"
+    target_language = "Italian" # Set your target language here
     
+    # Ensure directories exist
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
-        # Creiamo un file temporaneo per assicurarci che Git la veda
         with open(os.path.join(upload_dir, ".gitkeep"), "w") as f:
             f.write("")
 
     if not os.path.exists(archive_dir):
         os.makedirs(archive_dir)
 
-    # 1. Carica TUTTE le Immagini
+    # 1. Upload ALL Images first
     image_extensions = ('*.jpg', '*.jpeg', '*.png', '*.webp')
     image_files = []
     for ext in image_extensions:
         image_files.extend(glob.glob(os.path.join(upload_dir, ext)))
     
-    uploaded_images = [] # Creiamo la lista per la galleria
+    uploaded_images = []
+    locations_list = [] # To store GPS strings found in images
+
     for img_path in image_files:
-        print(f"Caricamento immagine: {img_path}")
-        m_id, m_url, m_coords = upload_media(img_path) # Riceve anche m_coords
+        print(f"Uploading image: {img_path}")
+        m_id, m_url, m_coords = upload_media(img_path)
         if m_id:
             uploaded_images.append({
                 'id': m_id, 
                 'url': m_url, 
-                'coords': m_coords # Ora i dati GPS viaggiano con l'immagine verso Gemini
+                'coords': m_coords 
             })
+            if m_coords:
+                locations_list.append(m_coords)
 
-    # 2. Cerca Testi
+    # Prepare a single string of coordinates for Gemini (comma separated)
+    all_coords = "; ".join(locations_list) if locations_list else ""
+
+    # 2. Process Text Files
     text_files = glob.glob(os.path.join(upload_dir, "*.txt"))
     if not text_files:
-        print("Nessun file di testo trovato.")
+        print("No text files found in uploads.")
     else:
         for file_path in text_files:
-            print(f"In lavorazione: {file_path}")
+            print(f"Processing content: {file_path}")
             with open(file_path, "r", encoding="utf-8") as f:
                 raw_notes = f.read()
             
-            # 1. Genera il contenuto passando la LISTA delle immagini
-            raw_output = generate_post_content(raw_notes, uploaded_images)
-            title, blog_content = parse_gemini_output(raw_output)
+            # 1. Chiamata a Gemini (passiamo lang e all_coords)
+            raw_output = generate_post_content(raw_notes, uploaded_images, all_coords, target_language)
+            
+            # 2. Trasformiamo la stringa JSON in un dizionario Python
+            structured_data = process_gemini_response(raw_output)
 
-            # 2. Prendi la prima immagine come immagine in evidenza (se esiste)
-            feat_id = uploaded_images[0]['id'] if uploaded_images else None
-            
-            # 3. Pubblica UNA SOLA VOLTA
-            status = publish_to_wordpress(title, blog_content, feat_id)
-            
-            if status in [200, 201]:
-                print(f"Successo! Post creato: {title}")
-                # Sposta i file processati
-                shutil.move(file_path, os.path.join(archive_dir, os.path.basename(file_path)))
-                for img in image_files:
-                    try:
-                        shutil.move(img, os.path.join(archive_dir, os.path.basename(img)))
-                    except:
-                        pass
+            if structured_data:
+                # 3. Costruiamo la galleria HTML in Python
+                gallery_html = ""
+                if len(uploaded_images) > 1:
+                    gallery_html = '\n\n\n<!-- wp:gallery {"linkTo":"none"} -->'
+                    gallery_html += '\n<figure class="wp-block-gallery has-nested-images columns-default is-cropped">'
+                    for img in uploaded_images:
+                        # Usiamo il formato corretto per i blocchi immagine Gutenberg
+                        gallery_html += f'\n<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad" class="wp-image-{img["id"]}"/></figure>'
+                    gallery_html += '\n</figure>'
+                    gallery_html += '\n<!-- /wp:gallery -->\n'
+                elif len(uploaded_images) == 1:
+                    img = uploaded_images[0]
+                    gallery_html = '\n\n\n<!-- wp:image {"lightbox":{"enabled":true}, "id": %s, "sizeSlug": "large", "linkDestination":"none"} -->\n' % str(img["id"])
+                    gallery_html += f'\n\n<figure class="wp-block-image size-large"><img src="{img["url"]}" alt="Nomad" class="wp-image-{img["id"]}"/></figure>'
+                    gallery_html += '\n<!-- /wp:image -->\n'
+                
+                # 4. Uniamo il testo di Gemini con la galleria
+                structured_data["body"] = structured_data.get("body", "") + gallery_html
+
+                # 5. Pubblichiamo su WordPress
+                feat_id = uploaded_images[0]['id'] if uploaded_images else None
+                status = publish_to_wordpress(structured_data, feat_id, all_coords)
+                
+                if status in [200, 201]:
+                    current_title = structured_data.get("title", "No Title")
+                    print(f"Success! Post created: {current_title}")
+                    
+                    # Move processed files to archive
+                    shutil.move(file_path, os.path.join(archive_dir, os.path.basename(file_path)))
+                    for img in image_files:
+                        try:
+                            shutil.move(img, os.path.join(archive_dir, os.path.basename(img)))
+                        except Exception as e:
+                            print(f"Could not move {img}: {e}")
+                else:
+                    print(f"WordPress API Error: {status}")
             else:
-                print(f"Errore WP: {status}")
+                print("Failed to get structured data from Gemini. Skipping post creation.")
