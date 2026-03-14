@@ -3,8 +3,9 @@ name: Nomad Pipeline Execution
 on:
   push:
     paths:
-      - 'uploads/**'
-      - 'process_content.py'
+      - 'uploads/*.oga'
+      - 'uploads/*.mp3'
+      - 'uploads/*.m4a'
 
 jobs:
   build:
