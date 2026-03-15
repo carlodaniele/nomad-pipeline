@@ -11,6 +11,8 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 WP_URL = os.getenv("WP_URL")
 WP_USER = "carlo"
 WP_PASS = os.getenv("WP_APP_PASSWORD")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -239,13 +241,16 @@ def publish_to_wordpress(data, media_id=None, locations=None):
     try:
         response = requests.post(endpoint, json=post_data, auth=auth)
         if response.status_code == 201:
-            post_link = response.json().get("link") # Recupera l'URL pubblico
+            post_link = response.json().get("link")
             print(f"Post published successfully: {post_link}")
             
-            # NOTIFICA TELEGRAM
-            tg_msg = f"✅ Nomad Pipeline: Post pubblicato!\n🔗 {post_link}"
-            tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-            requests.post(tg_url, data={"chat_id": "63481438", "text": tg_msg})
+            # NOTIFICA TELEGRAM DINAMICA
+            if TELEGRAM_TOKEN and CHAT_ID:
+                tg_msg = f"✅ Nomad Pipeline: Post pubblicato!\n🔗 {post_link}"
+                tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+                requests.post(tg_url, data={"chat_id": CHAT_ID, "text": tg_msg})
+            else:
+                print("Notifica non inviata: Token o Chat ID mancanti nei Secrets.")
             
         else:
             print(f"WP Error: {response.status_code} - {response.text}")
