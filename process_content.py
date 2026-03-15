@@ -226,7 +226,7 @@ def publish_to_wordpress(data, media_id=None, locations=None):
         "title": title,
         "content": content,
         "excerpt": excerpt,
-        "status": "draft",
+        "status": "publish", # imposta qui lo stato del post - "publish" o "draft"
         "meta": {
             "_yoast_wpseo_focuskw": focus_kw,
             "_yoast_wpseo_metadesc": excerpt
@@ -239,7 +239,14 @@ def publish_to_wordpress(data, media_id=None, locations=None):
     try:
         response = requests.post(endpoint, json=post_data, auth=auth)
         if response.status_code == 201:
-            print("Post created successfully as a draft.")
+            post_link = response.json().get("link") # Recupera l'URL pubblico
+            print(f"Post published successfully: {post_link}")
+            
+            # NOTIFICA TELEGRAM
+            tg_msg = f"✅ Nomad Pipeline: Post pubblicato!\n🔗 {post_link}"
+            tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+            requests.post(tg_url, data={"chat_id": "63481438", "text": tg_msg})
+            
         else:
             print(f"WP Error: {response.status_code} - {response.text}")
         return response.status_code
