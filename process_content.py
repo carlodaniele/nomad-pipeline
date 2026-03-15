@@ -201,62 +201,48 @@ def process_gemini_response(response_text):
         return None
 
 def publish_to_wordpress(data, media_id=None, locations=None):
+    # 1. Preparazione Endpoint e Auth
     base_url = WP_URL.strip().rstrip('/')
     endpoint = f"{base_url}/index.php?rest_route=/wp/v2/posts"
     auth = (WP_USER, WP_PASS)
     
-    # Extract data from the JSON dictionary provided by Gemini
-    title = data.get("title", "New Post from Nomad Pipeline")
+    # 2. Estrazione dati dal JSON di Gemini
     content = data.get("body", "")
-    excerpt = data.get("excerpt", "")
-    focus_kw = data.get("focus_kw", "")
     
-    # Add Google Maps link if locations are available
-    if locations and isinstance(locations, str):
+    # 3. Aggiunta Link Mappa (Solo se ci sono coordinate)
+    if locations:
         try:
-            # Prende la prima coordinata (funziona sia con 1 che con 10 foto)
-            first_coord = locations.split(';')[0].strip()
-            # Pulizia opzionale se la stringa contiene "lat:"
-            clean_coord = first_coord.replace("lat:", "").replace("lon:", "").replace("{", "").replace("}", "").strip()
-            
-            map_html = f'\n\n<p>📍 <a href="https://www.google.com/maps/search/?api=1&query={clean_coord}">View on Google Maps</a></p>'
-            content += map_html
+            # Prende la prima coordinata utile
+            coord = locations.split(';')[0].replace("{", "").replace("}", "").strip()
+            content += f'\n\n<p>📍 <a href="https://www.google.com/maps?q={coord}">Visualizza su Google Maps</a></p>'
         except:
             pass
 
+    # 4. Preparazione Payload per WordPress
     post_data = {
-        "title": title,
+        "title": data.get("title", "Nuovo Post Nomad"),
         "content": content,
-        "excerpt": excerpt,
-        "status": "publish", # imposta qui lo stato del post - "publish" o "draft"
+        "excerpt": data.get("excerpt", ""),
+        "status": "publish", # Pubblica direttamente!
         "meta": {
-            "_yoast_wpseo_focuskw": focus_kw,
-            "_yoast_wpseo_metadesc": excerpt
+            "_yoast_wpseo_focuskw": data.get("focus_kw", ""),
+            "_yoast_wpseo_metadesc": data.get("excerpt", "")
         }
     }
     
     if media_id:
         post_data["featured_media"] = media_id
         
+    # 5. Invio e feedback in console
     try:
         response = requests.post(endpoint, json=post_data, auth=auth)
         if response.status_code == 201:
-            post_link = response.json().get("link")
-            print(f"Post published successfully: {post_link}")
-            
-            # NOTIFICA TELEGRAM DINAMICA
-            if TELEGRAM_TOKEN and CHAT_ID:
-                tg_msg = f"✅ Nomad Pipeline: Post pubblicato!\n🔗 {post_link}"
-                tg_url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-                requests.post(tg_url, data={"chat_id": CHAT_ID, "text": tg_msg})
-            else:
-                print("Notifica non inviata: Token o Chat ID mancanti nei Secrets.")
-            
+            print(f"✅ Successo: Post pubblicato su {response.json().get('link')}")
         else:
-            print(f"WP Error: {response.status_code} - {response.text}")
+            print(f"❌ Errore WP ({response.status_code}): {response.text}")
         return response.status_code
     except Exception as e:
-        print(f"Error connecting to WordPress: {e}")
+        print(f"❌ Errore connessione: {e}")
         return None
 
 if __name__ == "__main__":    
