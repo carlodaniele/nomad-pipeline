@@ -159,18 +159,23 @@ def generate_post_content(raw_text, image_list, locations, lang, audio_files_ref
 
     MANDATORY RULES:
     1. LANGUAGE: All content in the JSON fields must be in {lang}.
-    2. VOICE: First-person singular ("Io").
-    3. WRITING STYLE: Use short sentences. Be concise. Prefer "showing" over "telling".
-    4. GEOLOCATION: Use the coordinates {locs} to identify the location. 
+    2. GEOLOCATION: Use the coordinates {locs} to identify the location. 
        CRITICAL: If {locs} is empty, DO NOT invent a location.
-    5. NO CLICHÉS: Avoid words like "an incredible adventure", "breathtaking", "magical discovery".
-    6. FORMAT: Return ONLY a valid JSON object.
+    3. FORMAT: Return ONLY a valid JSON object.
+
+    STYLE RULES:
+    1. WRITING STYLE: Use a narrative flow. Avoid bullet-point-style sentences. 
+       Sentences should have a natural rhythm: vary their length to keep the reader engaged.
+    2. VOICE: First-person singular ("Io").
+    3. TONE: Reflective and professional. Connect ideas logically rather than just listing facts.
+    4. NO CLICHÉS: Strictly avoid "adventure", "magical", "stunning". 
+       Use concrete nouns and active verbs instead of generic adjectives.
 
     Structure the 'body' using WordPress Gutenberg blocks (, ).
 
     TAXONOMY RULES (MANDATORY):
     1. CATEGORY: Choose exactly ONE from: {cat_list}.
-    2. TAGS: Choose 3 to 5 tags ONLY from: {tag_list}.
+    2. TAGS: Choose 1 to 3 tags ONLY from: {tag_list}.
 
     WORDPRESS BLOCK RULES (Apply to the 'body' field): 
     1. You must wrap every element exactly like this:
