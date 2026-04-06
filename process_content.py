@@ -195,6 +195,7 @@ def generate_post_content(raw_text, image_list, locations, lang, audio_files_ref
         lang=lang, 
         cat_list=ALLOWED_CATEGORIES, 
         tag_list=ALLOWED_TAGS
+    )
     
     contents.append(prompt)
     
