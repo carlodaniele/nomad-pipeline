@@ -21,7 +21,7 @@ ALLOWED_CATEGORIES = ["On the Road", "Digital Nomadism", "Inner Journey", "Tech 
 ALLOWED_TAGS = [
     "Tenere 700", "Motorcycle Diaries", "Offroad", "Marocco 2026", 
     "Gemini AI", "Automation", "WordPress", "GitHub", "Nomad Pipeline",
-    "Freedom", "Minimalism", "Solitude", "New Beginning", "Verucchio"
+    "Freedom", "Minimalism", "New Beginning", "Swimming", "Food & Wine"
 ]
 
 def get_decimal_from_dms(dms, ref):
