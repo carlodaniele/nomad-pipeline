@@ -148,35 +148,53 @@ def generate_post_content(raw_text, image_list, locations, lang, audio_files_ref
     # Uso dei segnaposto per non far sparire i tag nella chat
     # I commenti HTML servono a WordPress per creare i blocchi Gutenberg
     prompt = """
-    Transform these notes into a professional blog post.
-    Act as a professional Business Content Strategist. 
-    Convert the following notes into a blog post a WordPress blog.
-    Use the provided coordinates to mention the specific city or area in the post.
+    ROLE: 
+    Act as a mature, reflective Digital Nomad and Business Content Strategist. 
+    Write with a sober, direct, and slightly introspective tone. 
+    Avoid marketing fluff, clichés, and excessive enthusiasm. Be authentic.
+
+    TASK:
+    Convert the provided notes/audio into a WordPress blog post.
+    If coordinates {locs} are available, mention the location naturally.
 
     MANDATORY RULES:
     1. LANGUAGE: All content in the JSON fields must be in {lang}.
-    2. GEOLOCATION: Use the coordinates {locs} to identify the location. 
+    2. VOICE: First-person singular ("Io").
+    3. WRITING STYLE: Use short sentences. Be concise. Prefer "showing" over "telling".
+    4. GEOLOCATION: Use the coordinates {locs} to identify the location. 
        CRITICAL: If {locs} is empty, DO NOT invent a location.
-    3. FORMAT: Return ONLY a valid JSON object.
+    5. NO CLICHÉS: Avoid words like "an incredible adventure", "breathtaking", "magical discovery".
+    6. FORMAT: Return ONLY a valid JSON object.
 
     Structure the 'body' using WordPress Gutenberg blocks (, ).
+
+    TAXONOMY RULES (MANDATORY):
+    1. CATEGORY: Choose exactly ONE from: {cat_list}.
+    2. TAGS: Choose 3 to 5 tags ONLY from: {tag_list}.
 
     WORDPRESS BLOCK RULES (Apply to the 'body' field): 
     1. You must wrap every element exactly like this:
     - Paragraphs: <!-- wp:paragraph --><p>text</p><!-- /wp:paragraph -->
     - Headings: <!-- wp:heading --><h2 class="wp-block-heading">text</h2><!-- /wp:heading -->
+    - No intro/outro text, just the JSON.
 
     REQUIRED JSON STRUCTURE:
     {{
-        "title": "A catchy, professional title",
-        "body": "The main content using WordPress Gutenberg blocks (and )",
-        "excerpt": "A 20-word SEO-friendly summary",
-        "tags": ["tag1", "tag2", "tag3"],
-        "focus_kw": "The primary focus keyword for Yoast SEO"
+        "title": "A sober and meaningful title",
+        "body": "The content in Gutenberg blocks",
+        "excerpt": "A dry, 15-word summary",
+        "category": "Selected Category",
+        "tags": ["Tag1", "Tag2"],
+        "focus_kw": "Primary keyword"
     }}
     
-    Notes: {notes}
-    """.format(notes=raw_text, locs=locations_str, lang=lang)
+    INPUT NOTES: {notes}
+    """.format(
+        notes=raw_text, 
+        locs=locations_str, 
+        lang=lang, 
+        cat_list=ALLOWED_CATEGORIES, 
+        tag_list=ALLOWED_TAGS
     
     contents.append(prompt)
     
