@@ -16,6 +16,14 @@ CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
+# --- Configurazione tassonomie ---
+ALLOWED_CATEGORIES = ["On the Road", "Digital Nomadism", "Inner Journey", "Tech & Code", "Daily Log"]
+ALLOWED_TAGS = [
+    "Tenere 700", "Motorcycle Diaries", "Offroad", "Marocco 2026", 
+    "Gemini AI", "Automation", "WordPress", "GitHub", "Nomad Pipeline",
+    "Freedom", "Minimalism", "Solitude", "New Beginning", "Verucchio"
+]
+
 def get_decimal_from_dms(dms, ref):
     degrees = dms[0]
     minutes = dms[1] / 60.0
